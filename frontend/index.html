@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>NEXUS AI CRM</title>
+
+<style>
+
+body{
+background:#0b0f1a;
+color:white;
+font-family:Arial;
+margin:0;
+}
+
+header{
+background:#111827;
+padding:20px;
+text-align:center;
+font-size:24px;
+color:#00f7ff;
+font-weight:bold;
+}
+
+.container{
+padding:20px;
+}
+
+.form-box{
+background:#111827;
+padding:20px;
+border-radius:6px;
+margin-bottom:20px;
+}
+
+input{
+padding:10px;
+margin:5px;
+border-radius:5px;
+border:none;
+width:200px;
+}
+
+button{
+padding:10px 20px;
+background:#00f7ff;
+border:none;
+border-radius:5px;
+cursor:pointer;
+font-weight:bold;
+}
+
+button:hover{
+background:#00c7d6;
+}
+
+#messages{
+height:200px;
+overflow-y:auto;
+margin-top:20px;
+}
+
+.msg{
+margin-bottom:10px;
+padding:10px;
+border-radius:6px;
+max-width:60%;
+}
+
+.user{
+background:#ff006e33;
+margin-left:auto;
+}
+
+.ai{
+background:#00f7ff22;
+border-left:3px solid #00f7ff;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #00f7ff33;
+}
+
+th{
+color:#00f7ff;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>NEXUS AI CRM HCP Interaction Module</header>
+
+<div class="container">
+
+<h3>Log Interaction</h3>
+
+<div class="form-box">
+
+<input id="name" placeholder="HCP Name">
+<input id="email" placeholder="Email">
+<input id="company" placeholder="Company">
+
+<button onclick="logInteraction()">Log Interaction</button>
+
+</div>
+
+
+<h3>AI Assistant</h3>
+
+<div id="messages"></div>
+
+<input id="message" placeholder="Ask AI...">
+
+<button onclick="sendMessage()">Send</button>
+
+
+<h3>Interactions Dashboard</h3>
+
+<table id="leadsTable">
+
+<thead>
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Email</th>
+<th>Company</th>
+</tr>
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+</div>
+
+
+<script>
+
+const messages = document.getElementById("messages")
+
+function addMessage(role,text){
+
+const div=document.createElement("div")
+
+div.className="msg "+(role==="user"?"user":"ai")
+
+div.innerText=text
+
+messages.appendChild(div)
+
+messages.scrollTop=messages.scrollHeight
+
+}
+
+
+function updateTable(data){
+
+const table=document.querySelector("#leadsTable tbody")
+
+table.innerHTML=""
+
+data.forEach(row=>{
+
+const tr=document.createElement("tr")
+
+tr.innerHTML=`
+<td>${row[0]}</td>
+<td>${row[1]}</td>
+<td>${row[2]}</td>
+<td>${row[3]}</td>
+`
+
+table.appendChild(tr)
+
+})
+
+}
+
+
+async function logInteraction(){
+
+const name=document.getElementById("name").value
+const email=document.getElementById("email").value
+const company=document.getElementById("company").value
+
+const message=`log interaction ${name},${email},${company}`
+
+await sendToBackend(message)
+
+}
+
+
+async function sendMessage(){
+
+const input=document.getElementById("message")
+
+const message=input.value.trim()
+
+if(!message) return
+
+addMessage("user",message)
+
+input.value=""
+
+await sendToBackend(message)
+
+}
+
+
+async function sendToBackend(message){
+
+try{
+
+const response = await fetch("http://127.0.0.1:8000/chat",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+message:message
+})
+
+})
+
+const data = await response.json()
+
+if(message.includes("show")){
+
+const cleaned = data.response
+.replace(/\(/g,'[')
+.replace(/\)/g,']')
+.replace(/'/g,'"')
+
+const interactions = JSON.parse(cleaned)
+
+updateTable(interactions)
+
+addMessage("ai","Interactions loaded.")
+
+}else{
+
+addMessage("ai",data.response)
+
+}
+
+}catch(err){
+
+addMessage("ai","Connection error")
+
+}
+
+}
+
+</script>
+
+</body>
+
+</html>
